@@ -1,0 +1,144 @@
+{
+    "services": {
+        "last_chance_service": {
+            "connector": {
+                "protocol": "python",
+                "class_name": "PredefinedTextConnector",
+                "response_text": "Sorry, something went wrong inside. Please tell me, what did you say."
+            },
+            "state_manager_method": "add_bot_utterance_last_chance",
+            "tags": ["last_chance"]
+        },
+        "timeout_service": {
+            "connector": {
+                "protocol": "python",
+                "class_name": "PredefinedTextConnector",
+                "response_text": "Sorry, I need to think more on that. Let's talk about something else."
+            },
+            "state_manager_method": "add_bot_utterance_last_chance",
+            "tags": ["timeout"]
+        },
+        "annotators": {
+            "spelling_preprocessing": {
+                "connector": {
+                    "protocol": "http",
+                    "url": "http://spelling_preprocessing:3001/response"
+                },
+                "dialog_formatter": "dp_formatters:last_utt_dialog",
+                "response_formatter": "dp_formatters:simple_formatter_service",
+                "state_manager_method": "add_annotation"
+            },
+            "sentseg": {
+                "connector": {
+                    "protocol": "http",
+                    "url": "http://sentseg:3008/sentseg"
+                },
+                "dialog_formatter": "dp_formatters:last_utt_dialog",
+                "response_formatter": "dp_formatters:simple_formatter_service",
+                "state_manager_method": "add_annotation"
+            }
+        },
+        "skill_selectors": {
+            "simple_skill_selector": {
+                "connector": {
+                    "protocol": "python",
+                    "class_name": "connector:SkillSelectorConnector"
+                },
+                "previous_services": ["annotators"],
+                "tags": ["selector"]
+            }
+        },
+        "skills": {
+            "harvesters_maintenance_gobot_skill": {
+                "connector": {
+                    "protocol": "http",
+                    "url": "http://harvesters_maintenance_gobot_skill:3002/respond"
+                },
+                "dialog_formatter": "dp_formatters:full_dialog",
+                "response_formatter": "dp_formatters:base_skill_formatter",
+                "state_manager_method": "add_hypothesis",
+                "previous_services": ["annotators", "skill_selectors"]
+            },
+            "program_y": {
+                "connector": {
+                    "protocol": "http",
+                    "url": "http://program_y:3005/api/rest/v1.0/ask"
+                },
+                "dialog_formatter": "dp_formatters:programy_formatter_dialog",
+                "response_formatter": "dp_formatters:skill_with_attributes_formatter_service",
+                "previous_services": ["annotators", "skill_selectors"],
+                "state_manager_method": "add_hypothesis"
+            },
+            "odqa_skill": {
+                "connector": {
+                    "protocol": "http",
+                    "url": "http://odqa_skill:3031/respond"
+                },
+                "dialog_formatter": "dp_formatters:full_dialog",
+                "response_formatter": "dp_formatters:base_skill_formatter",
+                "previous_services": ["annotators", "skill_selectors"],
+                "state_manager_method": "add_hypothesis"
+            },
+            "translation_skill": {
+                "connector": {
+                    "protocol": "http",
+                    "url": "http://translation_skill:3032/respond"
+                },
+                "dialog_formatter": "dp_formatters:full_dialog",
+                "response_formatter": "dp_formatters:base_skill_formatter",
+                "previous_services": ["annotators", "skill_selectors"],
+                "state_manager_method": "add_hypothesis"
+            },
+"translation_skill": {
+                "connector": {
+                    "protocol": "http",
+                    "url": "http://translation_skill:3032/respond"
+                },
+                "dialog_formatter": "dp_formatters:full_dialog",
+                "response_formatter": "dp_formatters:base_skill_formatter",
+                "previous_services": ["annotators", "skill_selectors"],
+                "state_manager_method": "add_hypothesis"
+            }
+
+        },
+            "translation_skill": {
+                "connector": {
+                    "protocol": "http",
+                    "url": "http://translation_skill:3032/respond"
+                },
+                "dialog_formatter": "dp_formatters:full_dialog",
+                "response_formatter": "dp_formatters:base_skill_formatter",
+                "previous_services": ["annotators", "skill_selectors"],
+                "state_manager_method": "add_hypothesis"
+            },        "response_annotators": {
+            "emotion_classification": {
+                "connector": {
+                    "protocol": "python",
+                    "class_name": "connectors:BatchConnector",
+                    "url": "http://emotion_classification:3004/model"
+                },
+              "dialog_formatter": "dp_formatters:hypotheses_list",
+              "response_formatter": "dp_formatters:simple_formatter_service",
+              "previous_services": ["skills"],
+              "state_manager_method": "add_hypothesis_annotation_batch"
+            }
+        },
+        "response_selectors": {
+            "rule_based_response_selector": {
+                "connector": {
+                    "protocol": "http",
+                    "url": "http://rule_based_response_selector:3003/respond"
+                },
+                "dialog_formatter": "dp_formatters:full_dialog",
+                "response_formatter": "dp_formatters:base_response_selector_formatter_service",
+                "previous_services": ["response_annotators"],
+                "state_manager_method": "add_bot_utterance"
+            }
+        }
+    },
+    "connectors": {}
+}
+
+
+
+
