@@ -14,6 +14,7 @@ services:
     environment:
       WIKIDATA_URL: http://wiki-parser:3013/model
       ENTITY_LINKING_URL: http://entity_linking:3006/model
+    #network_mode: "host"
   mongo:
     command: mongod
     image: mongo:4.0.0
@@ -21,6 +22,7 @@ services:
       - 27017:27017
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    #network_mode: "host"
   clone_tts:
     command: uvicorn tts:app --host 0.0.0.0 --reload --port 4344
     build:
@@ -30,6 +32,7 @@ services:
       - 4344:4344
     environment:
       - CUDA_VISIBLE_DEVICES=0
+    #network_mode: "host"
   nemo:
     command: uvicorn main:app --host 0.0.0.0 --reload  --port 4343
     build:
@@ -39,6 +42,7 @@ services:
       - agent
     ports:
       - 4343:4343
+    #network_mode: "host"
   dff-bot-persona-skill:
     build:
       context: skills/dff
@@ -48,6 +52,9 @@ services:
       WIKIDATA_URL: http://wiki-parser:3013/model
       ENTITY_LINKING_URL: http://entity_linking:3006/model
       GRAPH_DB_URL: http://graph_db:3055
+    ports:
+      - 8105:8105
+    #network_mode: "host"
   rule_based_response_selector:
     build:
       context: selectors/rule_based_response_selector
@@ -56,4 +63,5 @@ services:
     volumes: [ ]
     ports:
       - 3003:3003
+    #network_mode: "host"
 version: "3.7"
