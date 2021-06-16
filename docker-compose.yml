@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: services/agent/Dockerfile
+      network_mode: host
     container_name: agent
     depends_on:
       - mongo
@@ -24,6 +25,7 @@ services:
     command: uvicorn tts:app --host 0.0.0.0 --reload --port 4344
     build:
       context: services/tts
+      network_mode: host
     ports:
       - 4344:4344
     environment:
@@ -32,6 +34,7 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --reload  --port 4343
     build:
       context: services/nemo
+      network_mode: host
     depends_on:
       - agent
     ports:
@@ -39,6 +42,7 @@ services:
   dff-bot-persona-skill:
     build:
       context: skills/dff
+      network_mode: host
     command: gunicorn --workers=1 --timeout 500 --graceful-timeout 500 server:app -b 0.0.0.0:8105 --reload --preload
     environment:
       WIKIDATA_URL: http://wiki-parser:3013/model
@@ -47,6 +51,7 @@ services:
   rule_based_response_selector:
     build:
       context: selectors/rule_based_response_selector
+      network_mode: host
     command: gunicorn --workers=1 server:app -b 0.0.0.0:3003
     volumes: [ ]
     ports:
