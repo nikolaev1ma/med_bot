@@ -161,11 +161,20 @@ def med_first_answer(vars):
     utt = state_utils.get_last_human_utterance(vars)["text"].lower()
 
     logger.info(f"НАЧАЛО ЗАПРОСА")
+    #45.89.225.193
+    """
     json_file = subprocess.call(['curl', '-x', 'post',
-                                 '"http://45.89.225.193:50002/predict_symptoms_and_questions?text={}&choiced_symptoms={}"'.format(
+                                 '"http://dockerhost:50002/predict_symptoms_and_questions?text={}&choiced_symptoms={}"'.format(
                                      utt, SYMPTOMS),
                                  '-H', '"accept: application/json"',
                                  '-d', '""'])
+    """
+    response = requests.post('http://dockerhost:50002/predict_symptoms_and_questions', 
+                                data={
+                                    'text':utt, 
+                                    'choiced_symptoms': SYMPTOMS})
+    json_file = response.json()
+    
     logger.info(f"ПРИШЕЛ ОТВЕТ: {json_file}")
     return json_file
 
@@ -300,12 +309,20 @@ def finish_result(vars):
 
         state_utils.set_confidence(vars, confidence=CONF_HIGH)
         state_utils.set_can_continue(vars, continue_flag=CAN_NOT_CONTINUE)
-
+        """
         json_file = subprocess.call(['curl', '-x', 'post',
                                      '"http://45.89.225.193:50002/predict_diagnosis?text={}&choiced_symptoms={}"'.format(
                                          utt, SYMPTOMS),
                                      '-H', '"accept: application/json"',
                                      '-d', '""'])
+        """
+
+        response = requests.post('http://dockerhost:50002/predict_diagnosis', 
+                                data={
+                                    'text':utt, 
+                                    'choiced_symptoms': SYMPTOMS})
+        json_file = response.json()
+
         diagnosis = json_file['diagnosis']
         result = ''
         for doctor in diagnosis:
