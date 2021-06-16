@@ -71,6 +71,8 @@ class State(Enum):
     USR_CORRECTION = auto()
     SYS_NOT_GOOD_MED_ASWER = auto()
 
+    SYS_TMP = auto()
+
     SYS_ERR = auto()
     USR_ERR = auto()
 
@@ -319,6 +321,15 @@ def finish_result(vars):
         state_utils.set_confidence(vars, 0)
 
         return error_response(vars)
+
+
+def tmp_func(ngrams, vars):
+    utt = state_utils.get_last_human_utterance(vars)["text"].lower()
+
+    flag = len(utt) > 0 or PROGRAM_STARTED
+    logger.info(f"TMP!!!! request {flag}")
+    return flag
+
 ##################################################################################################################
 ##################################################################################################################
 # linking
@@ -336,6 +347,7 @@ simplified_dialogflow.set_error_successor(State.USR_START, State.SYS_ERR)
 simplified_dialogflow.add_system_transition(State.SYS_GREETING, State.USR_ANSWER, started_quesstion)
 simplified_dialogflow.set_error_successor(State.SYS_GREETING, State.SYS_ERR)
 
+'''
 simplified_dialogflow.add_user_serial_transitions(
     State.USR_ANSWER,
     {
@@ -345,7 +357,10 @@ simplified_dialogflow.add_user_serial_transitions(
         State.SYS_GOOD_MED_ANSEWR: good_med_answer,
     },
 )
+'''
+simplified_dialogflow.add_user_transition(State.USR_ANSWER, State.SYS_TMP, tmp_func)
 simplified_dialogflow.set_error_successor(State.USR_ANSWER, State.SYS_ERR)
+
 
 simplified_dialogflow.add_system_transition(State.SYS_NOT_DOUBLE_MED_ANSWER, State.USR_START, bad_finish)
 simplified_dialogflow.set_error_successor(State.SYS_NOT_DOUBLE_MED_ANSWER, State.SYS_ERR)
