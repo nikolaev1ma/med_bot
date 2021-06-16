@@ -370,7 +370,7 @@ simplified_dialogflow.add_user_transition(State.USR_ANSWER, State.SYS_TMP, tmp_f
 simplified_dialogflow.set_error_successor(State.USR_ANSWER, State.SYS_ERR)
 
 
-simplified_dialogflow.add_system_transition(State.SYS_TMP, State.USR_TMP, tmp_user_ansewr())
+simplified_dialogflow.add_system_transition(State.SYS_TMP, State.USR_TMP, tmp_user_ansewr)
 simplified_dialogflow.set_error_successor(State.SYS_TMP, State.SYS_ERR)
 
 
