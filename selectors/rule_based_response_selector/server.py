@@ -31,7 +31,7 @@ def respond():
                 response_candidates.append(utt["hypotheses"])
             except:
                 pass
-    logger.info(response_candidates)
+    #logger.info(f"Текущие респонсы: {response_candidates}")
     #logger.info(f"\nresponse!!!!!{response_candidates}\n")
 
     selected_skill_names = []
@@ -44,11 +44,11 @@ def respond():
         try:
             res = res[0]
             if res["skill_name"] == "dff_bot_persona_skill":
-                selected_confidences.append(res["confidence"])
-                selected_skill_names.append(res["skill_name"])
-                selected_responses.append(res["text"])
-                selected_human_attributes.append(res.get("human_attributes", {}))
-                selected_bot_attributes.append(res.get("bot_attributes", {}))
+                selected_confidences = [res["confidence"]]
+                selected_skill_names = [res["skill_name"]]
+                selected_responses = [res["text"]]
+                selected_human_attributes = [res.get("human_attributes", {})]
+                selected_bot_attributes = [res.get("bot_attributes", {})]
         except:
             pass
 
