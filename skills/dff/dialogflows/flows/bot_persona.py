@@ -72,6 +72,7 @@ class State(Enum):
     SYS_NOT_GOOD_MED_ASWER = auto()
 
     SYS_TMP = auto()
+    USR_TMP = auto()
 
     SYS_ERR = auto()
     USR_ERR = auto()
@@ -330,6 +331,13 @@ def tmp_func(ngrams, vars):
     logger.info(f"TMP!!!! request {flag}")
     return flag
 
+def tmp_user_ansewr(vars):
+    request = "YES, I AM IN TMP NODE"
+
+    state_utils.set_confidence(vars, confidence=CONF_HIGH)
+    state_utils.set_can_continue(vars, continue_flag=CAN_CONTINUE_SCENARIO)
+    return request
+
 ##################################################################################################################
 ##################################################################################################################
 # linking
@@ -360,6 +368,10 @@ simplified_dialogflow.add_user_serial_transitions(
 '''
 simplified_dialogflow.add_user_transition(State.USR_ANSWER, State.SYS_TMP, tmp_func)
 simplified_dialogflow.set_error_successor(State.USR_ANSWER, State.SYS_ERR)
+
+
+simplified_dialogflow.add_system_transition(State.SYS_TMP, State.USR_TMP, tmp_user_ansewr())
+simplified_dialogflow.set_error_successor(State.SYS_TMP, State.SYS_ERR)
 
 
 simplified_dialogflow.add_system_transition(State.SYS_NOT_DOUBLE_MED_ANSWER, State.USR_START, bad_finish)
