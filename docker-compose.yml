@@ -35,15 +35,15 @@ services:
     environment:
       - CUDA_VISIBLE_DEVICES=0
     #network_mode: "host"
-  nemo:
-    command: uvicorn main:app --host 0.0.0.0 --reload  --port 4343
-    build:
-      context: services/nemo
-      network: host
-    depends_on:
-      - agent
-    ports:
-      - 4343:4343
+  #nemo:
+  #  command: uvicorn main:app --host 0.0.0.0 --reload  --port 4343
+  #  build:
+  #    context: services/nemo
+  #    network: host
+  # depends_on:
+  #    - agent
+  #  ports:
+  #    - 4343:4343
     #network_mode: "host"
   dff-bot-persona-skill:
     build:

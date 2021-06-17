@@ -61,8 +61,10 @@ def get_dialog_state(dialogflow):
 
 
 def run_turn(dialogflow, text):
+    logger.info(text)
     dialogflow.user_turn(text)
     text = dialogflow.system_turn()
+    logger.info(text)
     confidence = dialogflow.controller().vars()["agent"]["response"].get("confidence", 0.85)
     can_continue = CAN_CONTINUE_SCENARIO if confidence else CAN_NOT_CONTINUE
     can_continue = dialogflow.controller().vars()["agent"]["response"].get("can_continue", can_continue)

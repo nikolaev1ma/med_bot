@@ -105,7 +105,7 @@ class DFEasyFilling:
                 def run(self, ngrams, vars, args):
                     try:
                         text = nlg(vars=vars)
-                        text = utils.clean_text(text)
+                        #text = utils.clean_text(text)
                         return text
                     except Exception as exc:
                         sentry_sdk.capture_exception(exc)

@@ -69,6 +69,7 @@ def handler(requested_data, random_seed=None):
                 DF, human_utter_index, dialog, state, entities, used_links, disliked_skills
             )
             text, confidence, can_continue = dialogflow_utils.run_turn(DF, text)
+            logger.info(f"text: {text}")
             state, used_links, disliked_skills = dialogflow_utils.get_dialog_state(DF)
 
             human_attr = {f"{SERVICE_NAME}_state": state, "used_links": used_links, "disliked_skills": disliked_skills}

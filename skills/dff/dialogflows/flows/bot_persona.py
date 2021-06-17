@@ -69,6 +69,7 @@ class State(Enum):
     SYS_NOT_DOUBLE_MED_ANSWER = auto()
     SYS_GOOD_MED_ANSEWR = auto()
     USR_CORRECTION = auto()
+    SYS_REPLACE = auto()
     SYS_NOT_GOOD_MED_ASWER = auto()
 
     SYS_TMP = auto()
@@ -97,11 +98,13 @@ simplified_dialogflow = dialogflow_extention.DFEasyFilling(State.USR_START)
 ##################################################################################################################
 
 
-def yes_request(ngrams, str):
-    if 'yes' in str \
-            or 'да' in str \
-            or 'of course' in str \
-            or 'конечно' in str:
+def yes_request(str_i):
+    str_ = str_i.lower()
+    logger.info(f"СТРОКА: {str_}")
+    if 'yes' in str_ \
+            or 'да' in str_ \
+            or 'of course' in str_ \
+            or 'конечно' in str_:
         return True
     return False
 
@@ -125,6 +128,14 @@ def no_request(ngrams, vars):
 def error_response(vars):
     logger.info(vars)
     state_utils.set_confidence(vars, 0)
+    global SYMPTOMS
+    global NOT_MED_ANSWERS
+    global CORRECTION_INDEX
+    global CURRENT_MED_ANSWER
+    SYMPTOMS = ""
+    NOT_MED_ANSWERS = 0
+    CORRECTION_INDEX = 0
+    CURRENT_MED_ANSWER = {}
     return "Sorry"
 
 
@@ -144,7 +155,7 @@ def started_quesstion(vars):
     try:
         utt = state_utils.get_last_human_utterance(vars)["text"].lower()
 
-        response = "Hi! Can you please give the most detailed answer what is bothering you?"
+        response = u"Приветствую! Могли бы вы четко описать что вас беспокоит?"
         state_utils.set_confidence(vars, confidence=CONF_HIGH)
         state_utils.set_can_continue(vars, continue_flag=CAN_CONTINUE_SCENARIO)
 
@@ -161,26 +172,27 @@ def med_first_answer(vars):
     utt = state_utils.get_last_human_utterance(vars)["text"].lower()
 
     logger.info(f"НАЧАЛО ЗАПРОСА")
-    #45.89.225.193
+    # 45.89.225.193
     """
     json_file = subprocess.call(['curl', '-x', 'post',
-                                 '"http://dockerhost:50002/predict_symptoms_and_questions?text={}&choiced_symptoms={}"'.format(
+                                 '"http://45.89.225.193:50002/predict_symptoms_and_questions?text={}&choiced_symptoms={}"'.format(
                                      utt, SYMPTOMS),
                                  '-H', '"accept: application/json"',
                                  '-d', '""'])
     """
-    response = requests.post('http://dockerhost:50002/predict_symptoms_and_questions', 
-                                data={
-                                    'text':utt, 
-                                    'choiced_symptoms': SYMPTOMS})
+    response = requests.post('http://45.89.225.193:50002/predict_symptoms_and_questions',
+                             data={
+                                 'text': utt,
+                                 'choiced_symptoms': SYMPTOMS})
     json_file = response.json()
-    
+
     logger.info(f"ПРИШЕЛ ОТВЕТ: {json_file}")
     return json_file
 
 
 def not_med_answer(ngrams, vars):
     med_res = med_first_answer(vars)
+    global NOT_MED_ANSWERS
     if not med_res['is_med_text'] and NOT_MED_ANSWERS == 0:
         NOT_MED_ANSWERS += 1
         return True
@@ -189,6 +201,7 @@ def not_med_answer(ngrams, vars):
 
 def double_not_med_answer(ngrams, vars):
     med_res = med_first_answer(vars)
+    global NOT_MED_ANSWERS
     if not med_res['is_med_text'] and NOT_MED_ANSWERS == 1:
         NOT_MED_ANSWERS += 1
         return True
@@ -197,6 +210,8 @@ def double_not_med_answer(ngrams, vars):
 
 def not_good_med_answer(ngrams, vars):
     med_res = med_first_answer(vars)
+    global CURRENT_MED_ANSWER
+    global NOT_MED_ANSWERS
     if med_res['is_med_text'] and not med_res['is_possible_predict_diagnosis']:
         CURRENT_MED_ANSWER = med_res
         return True
@@ -205,6 +220,7 @@ def not_good_med_answer(ngrams, vars):
 
 def good_med_answer(ngrams, vars):
     med_res = med_first_answer(vars)
+    global NOT_MED_ANSWERS
     if med_res['is_med_text'] and med_res['is_possible_predict_diagnosis']:
         return True
     return False
@@ -217,8 +233,15 @@ def bad_finish(vars):
         state_utils.set_confidence(vars, confidence=CONF_HIGH)
         state_utils.set_can_continue(vars, continue_flag=CAN_NOT_CONTINUE)
 
-        response = "I'm sorry, I don't understand you at all. Goodbye!"
-
+        response = "Извините, я вас совсем не понимаю, до свидания!"
+        global SYMPTOMS
+        global NOT_MED_ANSWERS
+        global CORRECTION_INDEX
+        global CURRENT_MED_ANSWER
+        SYMPTOMS = ""
+        NOT_MED_ANSWERS = 0
+        CORRECTION_INDEX = 0
+        CURRENT_MED_ANSWER = {}
         return response
 
     except Exception as exc:
@@ -236,9 +259,11 @@ def replace(vars):
         state_utils.set_confidence(vars, confidence=CONF_HIGH)
         state_utils.set_can_continue(vars, continue_flag=CAN_NOT_CONTINUE)
 
-        response = "I'm sorry, I don't understand you. " \
-                   "You can once again clearly say what is bothering you and note your symptoms."
-
+        response = "Извините, я вас не понимаю, пожалуйста, скажите четко что вас беспокоит?"
+        global CORRECTION_INDEX
+        global CURRENT_MED_ANSWER
+        CORRECTION_INDEX = 0
+        CURRENT_MED_ANSWER = {}
         return response
 
     except Exception as exc:
@@ -251,6 +276,7 @@ def replace(vars):
 
 def correction(vars):
     try:
+        global CURRENT_MED_ANSWER
         utt = state_utils.get_last_human_utterance(vars)["text"]
 
         state_utils.set_confidence(vars, confidence=CONF_HIGH)
@@ -274,37 +300,52 @@ def correction(vars):
 
 
 def correction_continue(ngrams, vars):
-    qustion_list = CURRENT_MED_ANSWER['symptoms_and_questions']
-
-    if CORRECTION_INDEX + 1 < MAX_CORRECTING and CORRECTION_INDEX + 1 < len(qustion_list):
-        utt = state_utils.get_last_human_utterance(vars)["text"]
-
-        if yes_request(utt):
-            q = qustion_list[CORRECTION_INDEX]
-            symbol = q[0]
-            SYMPTOMS += ',' + symbol
-        CORRECTION_INDEX += 1
-        return True
-    return False
+    try:
+        global CURRENT_MED_ANSWER
+        qustion_list = CURRENT_MED_ANSWER['symptoms_and_questions']
+        global CORRECTION_INDEX
+        global SYMPTOMS
+        if CORRECTION_INDEX + 1 < MAX_CORRECTING and CORRECTION_INDEX + 1 < len(qustion_list):
+            utt = state_utils.get_last_human_utterance(vars)["text"]
+            logger.info(f"НЕПОСЛЕДНИЙ ВЫБРОМ")
+            logger.info(qustion_list[CORRECTION_INDEX])
+            if yes_request(utt):
+                q = qustion_list[CORRECTION_INDEX]
+                symbol = q[0]
+                SYMPTOMS += ',' + symbol
+            CORRECTION_INDEX += 1
+            return True
+        return False
+    except:
+        return False
 
 
 def finish_correction(ngrams, vars):
-    qustion_list = CURRENT_MED_ANSWER['symptoms_and_questions']
+    try:
+        global CURRENT_MED_ANSWER
+        qustion_list = CURRENT_MED_ANSWER['symptoms_and_questions']
+        global CORRECTION_INDEX
+        global SYMPTOMS
+        if CORRECTION_INDEX + 1 == MAX_CORRECTING or CORRECTION_INDEX + 1 == len(qustion_list):
 
-    if CORRECTION_INDEX + 1 == MAX_CORRECTING or CORRECTION_INDEX + 1 == len(qustion_list):
-        utt = state_utils.get_last_human_utterance(vars)["text"]
+            utt = state_utils.get_last_human_utterance(vars)["text"]
+            logger.info(f"ПОСЛЕДНИЙ ВЫБРОМ")
+            logger.info(qustion_list[CORRECTION_INDEX])
 
-        if yes_request(utt):
-            q = qustion_list[CORRECTION_INDEX]
-            symbol = q[0]
-            SYMPTOMS += ',' + symbol
-        CORRECTION_INDEX += 1
-        return True
-    return False
+            if yes_request(utt):
+                q = qustion_list[CORRECTION_INDEX]
+                symbol = q[0]
+                SYMPTOMS += ',' + symbol
+            CORRECTION_INDEX += 1
+            return True
+        return False
+    except:
+        return False
 
 
 def finish_result(vars):
     try:
+        global SYMPTOMS
         utt = state_utils.get_last_human_utterance(vars)["text"]
 
         state_utils.set_confidence(vars, confidence=CONF_HIGH)
@@ -317,22 +358,30 @@ def finish_result(vars):
                                      '-d', '""'])
         """
 
-        response = requests.post('http://dockerhost:50002/predict_diagnosis', 
-                                data={
-                                    'text':utt, 
-                                    'choiced_symptoms': SYMPTOMS})
+        response = requests.post('http://45.89.225.193:50002/predict_diagnosis',
+                                 data={
+                                     'text': utt,
+                                     'choiced_symptoms': SYMPTOMS})
         json_file = response.json()
 
         diagnosis = json_file['diagnosis']
-        result = ''
+        logger.info(f"ДИАГНОЗ {diagnosis}")
+        result = ""
         for doctor in diagnosis:
-            result += doctor + '.'
+            result += doctor
+            result += "."
             diskription = diagnosis[doctor]
-            result += 'занимается '
+            result += "Занимается "
             for good_at in diskription['diseases']:
-                result += good_at + ', '
-            result = result[:2] + '.'
-            result += 'можно найти на ' + diskription['link'] + '.\n'
+                result += good_at + ", "
+            result += "можно найти на " + diskription['link'] + ".\n"
+        global NOT_MED_ANSWERS
+        global CORRECTION_INDEX
+        global CURRENT_MED_ANSWER
+        SYMPTOMS = ""
+        NOT_MED_ANSWERS = 0
+        CORRECTION_INDEX = 0
+        CURRENT_MED_ANSWER = {}
         return result
 
     except Exception as exc:
@@ -350,6 +399,7 @@ def tmp_func(ngrams, vars):
     logger.info(f"TMP!!!! request {flag}")
     return flag
 
+
 def tmp_user_ansewr(vars):
     request = "YES, I AM IN TMP NODE"
 
@@ -357,6 +407,27 @@ def tmp_user_ansewr(vars):
     state_utils.set_can_continue(vars, continue_flag=CAN_CONTINUE_SCENARIO)
     return request
 
+
+def good_replace(vars):
+    try:
+        utt = state_utils.get_last_human_utterance(vars)["text"]
+
+        state_utils.set_confidence(vars, confidence=CONF_HIGH)
+        state_utils.set_can_continue(vars, continue_flag=CAN_NOT_CONTINUE)
+
+        response = "Хорошо! А теперь можете повторить что вас беспокоит в подробной форме?"
+        global CORRECTION_INDEX
+        global CURRENT_MED_ANSWER
+        CORRECTION_INDEX = 0
+        CURRENT_MED_ANSWER = {}
+        return response
+
+    except Exception as exc:
+        logger.info("WTF in replace")
+        logger.exception(exc)
+        state_utils.set_confidence(vars, 0)
+
+        return error_response(vars)
 ##################################################################################################################
 ##################################################################################################################
 # linking
@@ -373,7 +444,6 @@ simplified_dialogflow.set_error_successor(State.USR_START, State.SYS_ERR)
 
 simplified_dialogflow.add_system_transition(State.SYS_GREETING, State.USR_ANSWER, started_quesstion)
 simplified_dialogflow.set_error_successor(State.SYS_GREETING, State.SYS_ERR)
-
 
 simplified_dialogflow.add_user_serial_transitions(
     State.USR_ANSWER,
@@ -407,14 +477,16 @@ simplified_dialogflow.add_user_serial_transitions(
     State.USR_CORRECTION,
     {
         State.SYS_NOT_GOOD_MED_ASWER: correction_continue,
-        State.USR_ANSWER: finish_correction,
+        State.SYS_REPLACE: finish_correction,
     },
 )
 simplified_dialogflow.set_error_successor(State.USR_CORRECTION, State.SYS_ERR)
 
+simplified_dialogflow.add_system_transition(State.SYS_REPLACE, State.USR_ANSWER, good_replace)
+simplified_dialogflow.set_error_successor(State.SYS_REPLACE, State.SYS_ERR)
+
 simplified_dialogflow.add_system_transition(State.SYS_GOOD_MED_ANSEWR, State.USR_START, finish_result)
 simplified_dialogflow.set_error_successor(State.SYS_GOOD_MED_ANSEWR, State.SYS_ERR)
-
 
 #################################################################################################################
 #  SYS_ERR
