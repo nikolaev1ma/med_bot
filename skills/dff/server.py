@@ -65,10 +65,16 @@ def handler(requested_data, random_seed=None):
             text = dialog["human_utterances"][-1]["text"]
             text = clean_text(text)
 
+            check_point = time.time()
             dialogflow_utils.load_into_dialogflow(
                 DF, human_utter_index, dialog, state, entities, used_links, disliked_skills
             )
+            check_time = time.time() - check_point
+            logger.info(f"load_into_dialogflow exec time = {check_time:.3f}s")
+
             text, confidence, can_continue = dialogflow_utils.run_turn(DF, text)
+            check_time = time.time() - check_point
+            logger.info(f"run_turn exec time = {check_time:.3f}s")
             logger.info(f"text: {text}")
             state, used_links, disliked_skills = dialogflow_utils.get_dialog_state(DF)
 

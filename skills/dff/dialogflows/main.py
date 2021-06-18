@@ -1,7 +1,7 @@
 import logging
 
 from emora_stdm import CompositeDialogueFlow, DialogueFlow
-
+import time
 
 import stdm.dialogflow_extention as dialogflow_extention
 
@@ -11,15 +11,20 @@ import dialogflows.scopes as scopes
 logger = logging.getLogger(__name__)
 
 
+st_time = time.time()
 composite_dialogflow = CompositeDialogueFlow(
     scopes.State.USR_ROOT,
     system_error_state=scopes.State.SYS_ERR,
     user_error_state=scopes.State.USR_ERR,
     initial_speaker=DialogueFlow.Speaker.USER,
 )
-
+up_time = time.time() - st_time
+logger.info(f"dff start init exec time = {up_time:.3f}s")
 
 composite_dialogflow.add_component(bot_persona_flow.dialogflow, scopes.BOT_PERSONA)
+
+up_time = time.time() - st_time
+logger.info(f"dff logic init dff exec time = {up_time:.3f}s")
 
 dialogflow = composite_dialogflow.component(scopes.MAIN)
 simplified_dialogflow = dialogflow_extention.DFEasyFilling(dialogflow=dialogflow)
