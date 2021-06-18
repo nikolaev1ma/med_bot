@@ -45,6 +45,9 @@ services:
   #  ports:
   #    - 4343:4343
     #network_mode: "host"
+  #asr:
+  #  build:
+  #    context: services/russian_asr
   dff-bot-persona-skill:
     build:
       context: skills/dff

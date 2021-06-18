@@ -18,26 +18,6 @@
             "state_manager_method": "add_bot_utterance_last_chance",
             "tags": ["timeout"]
         },
-        "annotators": {
-            "spelling_preprocessing": {
-                "connector": {
-                    "protocol": "http",
-                    "url": "http://spelling_preprocessing:3001/response"
-                },
-                "dialog_formatter": "dp_formatters:last_utt_dialog",
-                "response_formatter": "dp_formatters:simple_formatter_service",
-                "state_manager_method": "add_annotation"
-            },
-            "sentseg": {
-                "connector": {
-                    "protocol": "http",
-                    "url": "http://sentseg:3008/sentseg"
-                },
-                "dialog_formatter": "dp_formatters:last_utt_dialog",
-                "response_formatter": "dp_formatters:simple_formatter_service",
-                "state_manager_method": "add_annotation"
-            }
-        },
         "skill_selectors": {
             "simple_skill_selector": {
                 "connector": {
